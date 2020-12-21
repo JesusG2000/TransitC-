@@ -1,0 +1,66 @@
+﻿<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8" />
+    <title>Users</title>
+    <link rel="stylesheet" type="text/css" href="~/Login.css">
+    <link href="//maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css" rel="stylesheet" id="bootstrap-css">
+    <script src="//maxcdn.bootstrapcdn.com/bootstrap/4.0.0/js/bootstrap.min.js"></script>
+    <script src="//cdnjs.cloudflare.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
+</head>
+<body>
+    <div class="wrapper fadeInDown">
+        <div id="formContent">
+            <input type="text" id="login" class="fadeIn second" name="login" placeholder="login">
+            <input type="text" id="password" class="fadeIn third" name="login" placeholder="password">
+            <p id="errorMsg"></p>
+            <button class="btn btn-primary btn-lg btn-block login-button" onclick="logUser()">Login</button>
+            <div id="formFooter">
+                <a class="underlineHover" href="/home/registration">Registration</a>
+            </div>
+
+        </div>
+    </div>
+    <script>
+        async function logUser() {
+            let user =
+            {
+                name: document.getElementById('login').value,
+                password: document.getElementById('password').value,
+            }
+            const response = await isUserExist(user);
+            if (response !== null) {
+                response.lastVisitDate = new Date();
+                await EditUser(response);
+                document.location.href = "/home/welcome";
+            } else {
+                document.getElementById('errorMsg').innerHTML = 'No such user';
+            }
+        }
+
+        async function isUserExist(user) {
+            const response = await fetch("/login/isUserExist", {
+                method: "POST",
+                headers: { "Accept": "application/json", "Content-Type": "application/json" },
+                body: JSON.stringify(user)
+            });
+            if (response.ok === true) {
+                console.log(response)
+                let data = await response.json();
+                return data;
+            }
+            return null
+        }
+        async function EditUser(user) {
+            console.log("in edit user login")
+            const response = await fetch("/login/user", {
+                method: "PUT",
+                headers: { "Accept": "application/json", "Content-Type": "application/json" },
+                body: JSON.stringify(
+                    user
+                )
+            });
+        }
+    </script>
+</body>
+</html>     

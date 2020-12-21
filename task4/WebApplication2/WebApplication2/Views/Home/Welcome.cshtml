@@ -1,0 +1,239 @@
+﻿<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8" />
+    <title>Users</title>
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css">
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+    <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.6.3/css/all.css" integrity="sha384-UHRtZLI+pbxtHCWp1t77Bi1L4ZtiqrqD80Kn4Z8NTSRyMA2Fd33n5dQ8lWUE00s/" crossorigin="anonymous">
+</head>
+<body>
+    <nav class="navbar navbar-expand-lg navbar-light bg-light">
+        <ul class="navbar-nav mr-auto">
+
+            <li class="nav-item active">
+                <button class="btn" onclick="deleteUser()"><i class="material-icons" style="color:red">delete</i></button>
+            </li>
+            <li class="nav-item active">
+                <button class="btn" onclick="changeStatusUser(true)"><i class="material-icons" style="color:red">block</i></button>
+            </li>
+            <li class="nav-item">
+                <button class="btn" onclick="changeStatusUser(false)"><i class="material-icons" style="color:green">beenhere</i></button>
+            </li>
+        </ul>
+    </nav>
+    <h2>UserList</h2>
+    <div class="container">
+
+        <table class="table table-condensed ">
+            <thead>
+                <tr>
+                    <th>
+                        <input type="checkbox" class="form-check-input" id="allCheck" onclick="actionForAll()">
+                        <label class="form-check-label" for="allCheck">Check\uncheck all</label>
+                    </th>
+                    <th>Id</th>
+                    <th>Name</th>
+                    <th>Email</th>
+                    <th>Register date</th>
+                    <th>Last visit date</th>
+                    <th>Status</th>
+                </tr>
+            </thead>
+            <tbody>
+            </tbody>
+        </table>
+    </div>
+    <script>
+        var checked = 0;
+        // Получение всех пользователей
+        async function GetUsers() {
+            // отправляет запрос и получаем ответ
+            let response = await fetch("/api/users", {
+                method: "GET",
+                headers: { "Accept": "application/json", "Content-Type": "application/json" }
+            });
+            let users = await response.json();
+            return users;
+            // если запрос прошел нормально
+
+        }
+        async function DeleteUser(id) {
+            let response = await fetch("/api/user/" + id, {
+                method: "DELETE",
+                headers: { "Accept": "application/json", "Content-Type": "application/json" }
+            });
+            checkCookie();
+            let user = await response.json();
+            return user;
+        }
+
+        async function genTable() {
+            let users = await GetUsers();
+            let rows = document.querySelector("tbody");
+
+            users.forEach(user => {
+                rows.append(rowInTable(user));
+            });
+        }
+
+        function actionForAll() {
+
+            var checkboxes = document.getElementsByClassName('checkbox');
+
+            for (var index = 0; index < checkboxes.length; index++) {
+                if (checked % 2 == 0) {
+                    checkboxes[index].checked = true;
+                } else {
+                    checkboxes[index].checked = false;
+                }
+
+            }
+            checked = !checked;
+        }
+
+        async function deleteUser() {
+            const users = await GetUsers();
+            users.forEach
+                (user => {
+                    let checkBoxElem = document.getElementById('checkbox' + user.id);
+                    if (checkBoxElem.checked) {
+                        async function del() {
+                            let userFromDelete = await DeleteUser(user.id);
+                            document.querySelector("tr[data-rowid='" + userFromDelete.id + "']").remove();
+                            
+
+                        }
+                        del();
+                    }
+                }
+                )
+            backToUncheck();
+        }
+
+       async function backToUncheck(needToChange) {
+            let checkAll = document.getElementById('allCheck').checked;
+            if (checkAll) {
+                document.getElementById('allCheck').checked = !document.getElementById('allCheck').checked
+                checked = !checked;
+               
+           }
+           checkCookie();
+        }
+
+        async function changeStatusUser(status) {
+            const users = await GetUsers();
+            users.forEach
+                (user => {
+                    let checkBoxElem = document.getElementById('checkbox' + user.id);
+                    if (checkBoxElem.checked) {
+                            EditUser(user, status);
+                        
+                    }
+                }
+                )
+            backToUncheck();
+            
+        }
+
+        function rowInTable(user) {
+            let trElem = document.createElement('tr');
+            let inputElem = document.createElement('input');
+            trElem.setAttribute("data-rowid", user.id);
+            console.log(user);
+            inputElem.type = 'checkbox';
+            inputElem.className = 'checkbox'
+            inputElem.id = 'checkbox' + user['id'];
+
+            addInTable(inputElem)
+
+            addInTable(user['id']);
+
+            addInTable(user['name']);
+
+            addInTable(user['email']);
+
+            addInTable(user['registrationDate']);
+
+            addInTable(user['lastVisitDate']);
+
+            addInTable(user['isBlock'] === true ? 'blocked' : 'not blocked');
+
+            return trElem;
+            function addInTable(data) {
+                thElem = document.createElement('th');
+                thElem.append(data);
+                trElem.append(thElem);
+            }
+        }
+
+        async function EditUser(user, userStatus) {
+            const response = await fetch("/api/user", {
+                method: "PUT",
+                headers: { "Accept": "application/json", "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    id: user.id,
+                    name: user.name,
+                    password: user.password,
+                    email: user.email,
+                    registrationDate: user.registrationDate,
+                    lastVisitDate: user.lastVisitDate,
+                    isBlock: userStatus
+                })
+            });
+            if (response.ok) {
+                let user = await response.json();
+                console.log(user);
+                document.querySelector("tr[data-rowid='" + user.id + "']").replaceWith(rowInTable(user));
+                checkCookie()
+            }
+        }
+        async function checkCookie() {
+            let userName = getCookie('user');
+            const response = await fetch("/api/user", {
+                method: "POST",
+                headers: { "Accept": "application/json", "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    name: userName
+                })
+            });
+            if (response.ok) {
+                let data = await response.json();
+                console.log(data)
+
+                if (data.isBlock) {
+                    console.log("hehe1")
+                    document.location.href = "/home/login";
+                }
+            } else {
+                console.log("hehe2")
+                document.location.href = "/home/login";
+            }
+
+                function getCookie(name) {
+                var cookie = " " + document.cookie;
+                var search = " " + name + "=";
+                var setStr = null;
+                var offset = 0;
+                var end = 0;
+                if (cookie.length > 0) {
+                    offset = cookie.indexOf(search);
+                    if (offset != -1) {
+                        offset += search.length;
+                        end = cookie.indexOf(";", offset)
+                        if (end == -1) {
+                            end = cookie.length;
+                        }
+                        setStr = unescape(cookie.substring(offset, end));
+                    }
+                }
+                return (setStr);
+            }
+        }
+          checkCookie()
+          genTable();
+         
+
+    </script>
+</body>
+</html>     
