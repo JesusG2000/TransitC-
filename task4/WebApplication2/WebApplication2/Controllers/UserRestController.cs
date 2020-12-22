@@ -10,24 +10,27 @@ using System.Linq;
 using System.Security.Claims;
 using System.Threading.Tasks;
 using WebApplication2.Data;
+using WebApplication2.Filters;
 
 namespace WebApplication2.Controllers
 {
    
     [ApiController]
-    public class UserController : ControllerBase
+    public class UserRestController : ControllerBase 
     {
         private AppDbContext appDbContext; 
-        public UserController(AppDbContext appDbContext)
+        public UserRestController(AppDbContext appDbContext)
         {
             this.appDbContext = appDbContext;   
         }
+        [ServiceFilter(typeof(MyFilter))]
         [Route("api/users")]
         [HttpGet]
         public async Task<ActionResult<IEnumerable<User>>> Get()
         {
             return await appDbContext.Users.ToListAsync();
         }
+        [ServiceFilter(typeof(MyFilter))]
         [Route("api/user")]
         [HttpPut]
         public async Task<ActionResult<User>> Put(User user)
@@ -45,7 +48,7 @@ namespace WebApplication2.Controllers
             await appDbContext.SaveChangesAsync();
             return Ok(user);
         } 
-        
+        [ServiceFilter(typeof(MyFilter))]
         [Route("api/user")]
         [HttpPost]
         public async Task<ActionResult<User>> Post(User user)
@@ -57,8 +60,10 @@ namespace WebApplication2.Controllers
             }
             return Ok(isExist);
         }
+        [ServiceFilter(typeof(MyFilter))]
         [Route("api/user/{id}")]
         [HttpDelete]
+
         public async Task<ActionResult<User>> Delete(int id)
         {
             User user = appDbContext.Users.FirstOrDefault(x => x.Id == id);
@@ -69,6 +74,12 @@ namespace WebApplication2.Controllers
             appDbContext.Users.Remove(user);
             await appDbContext.SaveChangesAsync();
             return Ok(user);
+        }
+        [Route("user/logout")]
+        public async Task<IActionResult> Logout()
+        {
+            await HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
+            return RedirectToAction("login", "home");
         }
     }
 }

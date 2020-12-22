@@ -12,10 +12,10 @@ using WebApplication2.Data;
 namespace WebApplication2.Controllers
 {
     [ApiController]
-    public class LoginController : ControllerBase
+    public class LoginRestController : ControllerBase
     {
         private AppDbContext appDbContext;
-        public LoginController(AppDbContext appDbContext)
+        public LoginRestController(AppDbContext appDbContext)
         {
             this.appDbContext = appDbContext;
         }

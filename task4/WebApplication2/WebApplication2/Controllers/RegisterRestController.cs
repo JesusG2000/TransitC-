@@ -9,10 +9,10 @@ using WebApplication2.Data;
 namespace WebApplication2.Controllers
 {
     [ApiController]
-    public class RegisterController : ControllerBase
+    public class RegisterRestController : ControllerBase
     {
         private AppDbContext appDbContext;
-        public RegisterController(AppDbContext appDbContext)
+        public RegisterRestController(AppDbContext appDbContext)
         {
             this.appDbContext = appDbContext;
         }

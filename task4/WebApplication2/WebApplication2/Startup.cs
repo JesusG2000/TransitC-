@@ -11,6 +11,7 @@ using Microsoft.Extensions.Hosting;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc.Authorization;
 using Microsoft.AspNetCore.Authentication.Cookies;
+using WebApplication2.Filters;
 
 namespace WebApplication2
 {
@@ -31,7 +32,7 @@ namespace WebApplication2
             services.AddDbContext<AppDbContext>(options => options.UseSqlServer(confString.GetConnectionString("DefaultConnection"))) ;
             services.AddControllers();
             services.AddMvc();
-
+            services.AddScoped<MyFilter>();
 
             services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
                 .AddCookie(options => //CookieAuthenticationOptions
