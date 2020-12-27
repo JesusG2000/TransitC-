@@ -1,0 +1,325 @@
+﻿<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8" />
+    <title>Welcome</title>
+    <link rel="stylesheet" type="text/css" href="~/Welcome.css">
+    <link href="//maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css" rel="stylesheet" id="bootstrap-css">
+    <script src="//maxcdn.bootstrapcdn.com/bootstrap/4.0.0/js/bootstrap.min.js"></script>
+    <script src="//cdnjs.cloudflare.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
+</head>
+<body>
+
+    <div class="container">
+        <div class="container">
+            <div class="row">
+                <div class="col-lg-10 col-md-7 col-sm-5 border border-primary rounded">
+                    <div class="form-group row">
+                        <form action="Game" method="post">
+                            <div>
+                                <input id="gameId" name="gameId" type="hidden" />
+                                <input id="gameTags" name="gameTags" type="hidden" />
+                                <div class="input-group mb-3">
+                                    <input type="text" class="form-control" placeholder="Recipient's username" aria-label="Recipient's username" aria-describedby="basic-addon2" id="gameName" name="gameName">
+                                    <div class="input-group-append">
+                                        <span class="input-group-text" id="basic-addon2">Name</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div>
+                                <button class="btn btn-success" onclick="createGame()">Create game</button>
+                            </div>
+                        </form>
+                        <div>
+                            <div class="input-group mb-3">
+                                <div class="input-group-prepend">
+                                    <span class="input-group-text" id="basic-addon3">Tags</span>
+                                </div>
+                                <input type="text" class="form-control"  id="txtAutoComplete" list="languageList" aria-describedby="basic-addon3">
+                                <button class="btn btn-primary" onclick="createTag()">Create tag</button>
+                            </div>
+
+                        </div>
+                        <form>
+                            <i class="fas fa-search" aria-hidden="true"></i>
+                            <input class="form-control form-control-md ml-3 w-75" type="text" placeholder="Search by tags"
+                                   aria-label="Search" id="search" onchange="showResult()">
+                        </form>
+                        <div id="tags" class="container row">
+                            
+                        </div>
+
+                    </div>
+                </div>
+
+            </div>
+        </div>
+        <div id="some"></div>
+
+        <div class="container">
+            <div class="col-md-9" id="gameList">
+
+            </div>
+        </div>
+    </div>
+
+    <datalist id="languageList">
+      
+    </datalist>
+
+
+
+
+    <script>
+
+
+        var elemsInsideRow = 0;
+        var rowId = 0;
+        var gameId = 20;
+        var tags = [];
+        var tagId = 0;
+
+        async function showResult() {
+            let value = document.getElementById('search').value;
+            
+            if (value == '') {
+                showTableList();
+            } else {
+                let response = await fetch("/game/search/" + value, {
+                    method: "GET",
+                    headers: { "Accept": "application/json", "Content-Type": "application/json" }
+                });
+                if (response.ok === true) {
+                    document.getElementById('gameList').innerHTML = '';
+                    let gameList = await response.json();
+                    gameList.forEach
+                        (game => {
+                            let languageList = document.getElementById('languageList');
+                            for (let i = 0; i < game['tags'].length; i++) {
+                                languageList.innerHTML += ' <option value="' + game['tags'][i] + '" />'
+                            }
+                            console.log(game['name'])
+                            genTable(game['name'], game['id'], game['countOfPlayers'], game['tags']);
+                        });
+                }
+            }
+        }
+        
+
+        function createGame() {
+            let mainList = document.getElementById('gameList');
+            
+            if (elemsInsideRow === 0) {
+                let divRow = document.createElement('div');
+                divRow.className = 'row'
+                divRow.id = 'row' + rowId;
+                mainList.appendChild(divRow);
+            }
+            if (elemsInsideRow < 2) {
+                genRowBody();
+            } else {
+
+                rowId++;
+                elemsInsideRow = 0;
+                createGame();
+            }
+        }
+        function genRowBody() {
+            let divRow = document.getElementById('row' + rowId);
+
+            let borderDiv = document.createElement('div');
+            borderDiv.className = 'col-sm border border-primary rounded';
+
+            let divForm = document.createElement('form');
+            divForm.action = 'Game';
+            divForm.method = 'post';
+
+            let divGame = document.createElement('div');
+            divGame.className = 'form-group row'
+
+
+
+            let divGameInput = document.createElement('input');
+            let gameName = document.getElementById('gameName').value;
+            divGameInput.type = 'hidden'
+            divGameInput.id = 'name' + gameId;
+            divGameInput.name = 'gameName';
+            divGameInput.value = gameName !== '' ? gameName : gameId
+
+            let pElem = document.createElement('p');
+            pElem.innerHTML =" Name " + gameName !== '' ? gameName : gameId;
+
+            let pElemTag = document.createElement('p');
+            for (let i = 0; i < tags.length; i++) {
+                pElem.innerHTML += tags[i];
+            }
+           
+
+            let inputGameName = document.createElement('input');
+            inputGameName.type = 'hidden';
+            inputGameName.name = 'gameId';
+            inputGameName.value = gameId;
+
+            document.getElementById('gameId').value = gameId;
+            document.getElementById('gameName').value = gameName !== '' ? gameName : gameId;
+            document.getElementById('gameTags').value = tags;
+
+            console.log(document.getElementById('gameId').value);
+            console.log(document.getElementById('gameName').value);
+
+            let divJoin = document.createElement('div');
+            divGame.className = 'form-group row'
+
+            let inputJoin = document.createElement('input');
+            inputJoin.type = 'submit';
+            inputJoin.id = 'game' + gameId;
+            inputJoin.value = 'Join';
+
+
+            divGame.appendChild(pElemTag);
+            divGame.appendChild(pElem);
+            divGame.appendChild(divGameInput);
+            divGame.appendChild(inputGameName);
+            divJoin.appendChild(inputJoin);
+
+            divForm.appendChild(divGame);
+            divForm.appendChild(divJoin);
+
+            borderDiv.appendChild(divForm);
+
+            divRow.appendChild(borderDiv);
+
+            gameId++;
+            elemsInsideRow++;
+            document.getElementById('tags').innerHTML = '';
+            tags = []
+            tagId = 0
+            // document.getElementById('gameName').value = '';
+
+
+        }
+
+        function genRowBodyFromExistGame(gameName, gameId, countOfPlayers,gameTags) {
+            let divRow = document.getElementById('row' + rowId);
+
+            let borderDiv = document.createElement('div');
+            borderDiv.className = 'col-sm border border-primary rounded';
+
+            let divForm = document.createElement('form');
+            divForm.action = 'Game';
+            divForm.method = 'post';
+
+            let divGame = document.createElement('div');
+            divGame.className = 'form-group row'
+
+            let pElem = document.createElement('p');
+            pElem.innerHTML = " Name " + gameName;
+            console.log(gameName)
+            let pElemTag = document.createElement('p');
+            pElemTag.innerHTML +=" Tags "
+            for (let i = 0; i < gameTags.length; i++) {
+                pElemTag.innerHTML += gameTags[i]+" , ";
+            }
+
+            let divGameInput = document.createElement('input');
+            divGameInput.type = 'hidden'
+            divGameInput.id = gameName;
+            divGameInput.name = 'gameName';
+            divGameInput.value = gameName;
+
+            let inputGameName = document.createElement('input');
+            inputGameName.type = 'hidden';
+            inputGameName.name = 'gameId';
+            inputGameName.value = gameId;
+
+            let divJoin = document.createElement('div');
+            divGame.className = 'form-group row'
+
+            let inputJoin = document.createElement('input');
+            inputJoin.type = 'submit';
+            inputJoin.id = 'game' + gameId;
+            inputJoin.value = 'Join';
+
+            if (countOfPlayers === 2) {
+                inputJoin.disabled = true;
+                divForm.action = '';
+                divForm.method = '';
+            }
+
+
+            divGame.appendChild(pElemTag);
+            divGame.appendChild(pElem);
+            divGame.appendChild(divGameInput);
+            divGame.appendChild(inputGameName);
+            divJoin.appendChild(inputJoin);
+
+            divForm.appendChild(divGame);
+            divForm.appendChild(divJoin);
+
+            borderDiv.appendChild(divForm);
+
+            divRow.appendChild(borderDiv);
+
+            this.gameId++;
+            this.elemsInsideRow++;
+
+
+        }
+
+        async function showTableList() {
+            let response = await getGameList();
+            if (response.ok === true) {
+                let gameList = await response.json();
+                gameList.forEach
+                    (game => {
+                        let languageList = document.getElementById('languageList');
+                        for (let i = 0; i < game['tags'].length; i++) {
+                            languageList.innerHTML += ' <option value="' + game['tags'][i]+'" />'
+                        }
+                        console.log(game['name'])
+                        genTable(game['name'], game['id'], game['countOfPlayers'],game['tags']);
+                    });
+            }
+        }
+
+        function genTable(gameName, gameId, countOfPlayers,gameTable) {
+            let mainList = document.getElementById('gameList');
+            if (elemsInsideRow === 0) {
+                let divRow = document.createElement('div');
+                divRow.className = 'row'
+                divRow.id = 'row' + rowId;
+                mainList.appendChild(divRow);
+            }
+            if (elemsInsideRow < 2) {
+
+                genRowBodyFromExistGame(gameName, gameId, countOfPlayers, gameTable);
+
+            } else {
+
+                rowId++;
+                elemsInsideRow = 0;
+                genTable(gameName, gameId, countOfPlayers, gameTable);
+            }
+        }
+
+        async function getGameList() {
+            return await fetch("/game/getAll", {
+                method: "GET",
+                headers: { "Accept": "application/json", "Content-Type": "application/json" }
+            });
+        }
+
+        function createTag() {
+            let divElem = document.getElementById('tags');
+            tags[tagId] = document.getElementById('txtAutoComplete').value;
+            divElem.innerHTML += ' <div class="border border-primary rounded">' +
+                '<p class="text-center">' + tags[tagId] + '</p>' +
+                '</div>';
+            tagId++;
+        }
+
+        showTableList();
+    </script>
+</body>
+</html>

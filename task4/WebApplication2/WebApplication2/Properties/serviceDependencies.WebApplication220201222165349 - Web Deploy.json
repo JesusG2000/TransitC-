@@ -1,0 +1,9 @@
+{
+  "dependencies": {
+    "mssql1": {
+      "type": "mssql.onprem",
+      "connectionId": "Server=COMPUTER\\\\MYSERV;Database=Task4;Trusted_Connection=True;MultipleActiveResultSets=true",
+      "secretStore": "AzureAppSettings"
+    }
+  }
+}

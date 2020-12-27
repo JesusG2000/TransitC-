@@ -1,0 +1,5 @@
+{
+  "ConnectionStrings": {
+    "DefaultConnection": "Server=COMPUTER\\MYSERV;Database=Task5;Trusted_Connection=True;MultipleActiveResultSets=true"
+  }
+}

@@ -1,0 +1,242 @@
+﻿<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8" />
+    <title></title>
+    <link rel="stylesheet" type="text/css" href="~/Game.css">
+</head>
+<body>
+    <div id="gameField">
+
+    </div>
+    @foreach (string country in ViewBag.gameTags)
+    {
+        <input type="hidden" name="tag" value="@country"/>
+    }
+
+    <script src="~/js/signalr/dist/browser/signalr.min.js"></script>
+    <script>
+        document.get
+        var CREATOR_CONNECTED = 1;
+        var BOTH_CONNECTED = 2;
+        var gameIdGlobal;
+        let canMove;
+        var creator;
+        var player;
+        const hubConnection = new signalR.HubConnectionBuilder()
+            .withUrl("/game")
+            .build();
+
+        hubConnection.start();
+
+
+        async function createCreator(gameId, gameName,gameTags) {
+            let id = gameId;
+            let name = gameName.toString();
+            let array = gameTags.split(',');
+            return await fetch("/game/createCreator", {
+                    method: "POST",
+                headers: { "Accept": "application/json", "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    id: id,
+                    name: name,
+                    gameTags: array
+                }
+                )
+                });
+        }
+
+        async function getGame(gameId) {
+            return await fetch("/game/"+ gameId, {
+                    method: "GET",
+                headers: { "Accept": "application/json", "Content-Type": "application/json" },
+                });
+        }
+
+        async function finistGame(gameId) {
+            return await fetch("/game/"+ gameId, {
+                    method: "PUT",
+                headers: { "Accept": "application/json", "Content-Type": "application/json" },
+                });
+        }
+
+        async function connectPlayer(res) {
+            return await fetch("/game/connectPlayer/" +  res, {
+                    method: "POST",
+                    headers: { "Accept": "application/json", "Content-Type": "application/json" }
+                });
+
+        }
+
+        async function getPlayerCountInGame(gameId) {
+            return await fetch("/game/playerCountInGame/"+gameId, {
+                method: "GET",
+                headers: { "Accept": "application/json", "Content-Type": "application/json" }
+            });
+        }
+
+        async function wait(gameId) {
+            let responce = await getPlayerCountInGame(gameId);
+            let CountData = await responce.json();
+            let playerCount = CountData['count'];
+            if (playerCount === BOTH_CONNECTED) {
+              console.log("can create game")
+              console.log(creator)
+              console.log(player)
+              return true;
+            }
+          return false;
+        }
+
+        async function connectPlayers() {
+           let gameId = @ViewData["gameId"];
+           gameIdGlobal = gameId;
+           let responce = await getPlayerCountInGame(gameId);
+            if (responce.ok === true) {
+                hubConnection.invoke("Send", gameId);
+
+                let CountData = await responce.json();
+                let playerCount = CountData['count'];
+
+                if (playerCount == CREATOR_CONNECTED) {
+                    let res = await connectPlayer(gameId);
+                    let responce = await res.json();
+                    player = responce;
+                    createGameField();
+
+
+                }
+            } else {
+                hubConnection.invoke("Send", gameId);
+
+                let gameName = @ViewData["gameName"];
+
+                let tagsName = document.getElementsByName('tag');
+                let res = await createCreator(gameId, gameName,tagsName[0].value);
+                let responce = await res.json();
+                creator = responce;
+                console.log(responce);
+
+                let gameField = document.getElementById('gameField');
+                gameField.innerHTML = 'Waiting for other player...';
+                hubConnection.on("Create", function (data) {
+                    createGameField()
+                });
+
+            }
+        }
+
+        async function createGameField() {
+
+            let divElem = document.createElement('div');
+            divElem.id = 'game';
+
+            let gameField = document.getElementById('gameField');
+            gameField.innerHTML = '';
+            gameField.append(divElem);
+            for (let i = 0; i < 9; i++) {
+                let divElem = document.createElement('button')
+                divElem.className = 'block';
+                divElem.id = i;
+                divElem.onclick = async (event) => {
+                  // await checkMove(event)
+                   await move(event)
+                };
+                document.getElementById('game').append(divElem);
+            }
+        }
+
+        async function move(event) {
+
+            let response = await getGame(gameIdGlobal);
+            let game = await response.json();
+            console.log('2 ' + canMove)
+            console.log('begin move')
+            hubConnection.invoke("Move", game, parseInt(event.target.id));
+            console.log('endMove')
+        }
+
+        function checkWinner() {
+            var allBlock = document.getElementsByClassName('block');
+            let draw = true;
+            for (let i = 0; i < 9; i++) {
+                if (allBlock[i].innerHTML == '') {
+                    draw = false;
+                    break;
+                }
+            }
+            if (!draw) {
+                if (
+                    (allBlock[0].innerHTML === 'X' && allBlock[1].innerHTML === 'X' && allBlock[2].innerHTML === 'X') ||
+                    (allBlock[3].innerHTML === 'X' && allBlock[4].innerHTML === 'X' && allBlock[5].innerHTML === 'X') ||
+                    (allBlock[6].innerHTML === 'X' && allBlock[7].innerHTML === 'X' && allBlock[8].innerHTML === 'X') ||
+                    (allBlock[0].innerHTML === 'X' && allBlock[3].innerHTML === 'X' && allBlock[6].innerHTML === 'X') ||
+                    (allBlock[1].innerHTML === 'X' && allBlock[4].innerHTML === 'X' && allBlock[7].innerHTML === 'X') ||
+                    (allBlock[2].innerHTML === 'X' && allBlock[5].innerHTML === 'X' && allBlock[8].innerHTML === 'X') ||
+                    (allBlock[0].innerHTML === 'X' && allBlock[4].innerHTML === 'X' && allBlock[8].innerHTML === 'X') ||
+                    (allBlock[2].innerHTML === 'X' && allBlock[4].innerHTML === 'X' && allBlock[6].innerHTML === 'X')
+                ) {
+                    alert("X wons");
+                    finistGame(gameIdGlobal)
+                    document.location.href = "/home/welcome";
+
+                }
+
+                if (
+                    (allBlock[0].innerHTML === '0' && allBlock[1].innerHTML === '0' && allBlock[2].innerHTML === '0') ||
+                    (allBlock[3].innerHTML === '0' && allBlock[4].innerHTML === '0' && allBlock[5].innerHTML === '0') ||
+                    (allBlock[6].innerHTML === '0' && allBlock[7].innerHTML === '0' && allBlock[8].innerHTML === '0') ||
+                    (allBlock[0].innerHTML === '0' && allBlock[3].innerHTML === '0' && allBlock[6].innerHTML === '0') ||
+                    (allBlock[1].innerHTML === '0' && allBlock[4].innerHTML === '0' && allBlock[7].innerHTML === '0') ||
+                    (allBlock[2].innerHTML === '0' && allBlock[5].innerHTML === '0' && allBlock[8].innerHTML === '0') ||
+                    (allBlock[0].innerHTML === '0' && allBlock[4].innerHTML === '0' && allBlock[8].innerHTML === '0') ||
+                    (allBlock[2].innerHTML === '0' && allBlock[4].innerHTML === '0' && allBlock[6].innerHTML === '0')
+                ) {
+                    alert("0 wons");
+                    finistGame(gameIdGlobal)
+                    document.location.href = "/home/welcome";
+
+                }
+            } else {
+                alert("draw");
+                finistGame(gameIdGlobal)
+                document.location.href = "/home/welcome";
+            }
+
+
+
+
+        }
+
+        window.onload = function ready() {
+
+            connectPlayers()
+           // beginGame()
+        }
+
+        hubConnection.on("Update", function (canMove,blockId, isUserMove) {
+            console.log('in update')
+            if (canMove) {
+                if (isUserMove) {
+                    console.log('in update true')
+                    document.getElementById(blockId).innerHTML = 'X'
+                } else {
+                    console.log('in update false')
+                    document.getElementById(blockId).innerHTML = '0'
+                }
+                checkWinner()
+            } else {
+                alert("not u")
+            }
+        });
+
+        @*//hubConnection.on("Check", function (isMovePrmited) {
+        //    console.log("fuck")
+        //    canMove = isMovePrmited;
+        //     if (!isMovePrmited) {
+        //        alert("not u")
+        //    }
+        //});*@
+    </script>
+</body>
+</html>
