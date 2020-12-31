@@ -1,0 +1,77 @@
+﻿.NOTE {
+    display: inline-block;
+    border: 1px red solid;
+    box-sizing: border-box;
+    overflow: scroll;
+}
+
+.button {
+    border: none;
+    color: white;
+    padding: 15px 32px;
+    text-align: center;
+    text-decoration: none;
+    display: inline-block;
+    margin: 4px 2px;
+    cursor: pointer;
+}
+
+#exit {
+    position: absolute;
+    top: 0;
+    right: 0;
+}
+
+
+.yellow {
+    background-color: yellow;
+}
+
+.blue {
+    background-color: blue;
+}
+
+.pink {
+    background-color: pink;
+}
+
+.red {
+    background-color: red;
+}
+
+.noteHeader, .buttons {
+    display: flex;
+}
+
+.noteHeader {
+    position: relative
+}
+
+
+#yellow, #blue, #pink, #exit {
+    visibility: hidden;
+}
+
+.noteHeader:hover #exit {
+    visibility: visible;
+}
+
+.buttons:hover #pink,
+.buttons:hover #blue,
+.buttons:hover #yellow {
+    visibility: visible;
+}
+
+.header p {
+    text-align: center;
+    word-wrap: break-word;
+}
+
+.content textarea {
+    margin-left: 5px
+}
+
+input {
+    border: none;
+    outline: none;
+}

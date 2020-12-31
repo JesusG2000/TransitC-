@@ -1,0 +1,292 @@
+﻿<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8" />
+    <title>Welcome</title>
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css">
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+    <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.6.3/css/all.css" integrity="sha384-UHRtZLI+pbxtHCWp1t77Bi1L4ZtiqrqD80Kn4Z8NTSRyMA2Fd33n5dQ8lWUE00s/" crossorigin="anonymous">
+    <script src='https://kit.fontawesome.com/a076d05399.js'></script>
+    <script src="https://code.jquery.com/jquery-1.12.4.js"></script>
+    <script src="https://code.jquery.com/ui/1.12.1/jquery-ui.js"></script>
+    <script src='https://kit.fontawesome.com/a076d05399.js'></script>
+   
+   
+    <link rel="stylesheet" href="//code.jquery.com/ui/1.12.1/themes/base/jquery-ui.css">
+    @* <link rel="stylesheet" href="/resources/demos/style.css">*@
+    <link rel="stylesheet" href="~/css/StyleSheet.css">
+    <link rel="stylesheet" href="~/css/cross.css">
+
+    <style>
+    </style>
+</head>
+<body>
+    <div>
+        @*<div class="note">
+                <div class="noteHeader">
+                    <div class="buttons">
+                        <div id="yellow">
+                            <button onclick="fillYellow()" class="button yellow"></button>
+                        </div>
+                        <div id="blue">
+                            <button class="button blue"></button>
+                        </div>
+                        <div id="pink">
+                            <button class="button pink"></button>
+                        </div>
+                    </div>
+                        <div id="exit">
+                            <button class="btn" onclick="deleteNote()"><i class="fas fa-skull-crossbones" style="color:red"></i></button>
+                        </div>
+                </div>
+                <div class="noteBody">
+                    <div class="header">
+                        <p><textarea></textarea></p>
+                    </div>
+                    <div class="content">
+                        <textarea></textarea>
+                    </div>
+                </div>
+                <div>
+                    <button class="btn" onclick="saveNote()"><i class="fas fa-save" style="color:green"></i></button>
+                </div>
+            </div>*@
+    </div>
+
+
+    @*<script>
+            const hubConnection = new signalR.HubConnectionBuilder()
+                .withUrl("/noteHub")
+                .build();
+
+            hubConnection.start();
+        </script>*@
+
+
+
+    <script src="~/js/JavaScript.js" type="text/javascript"></script>
+    <script src="~/js/signalr/dist/browser/signalr.min.js"></script>
+
+    <script>
+        var one = 11;
+        let connectionId;
+        const hubConnection = new signalR.HubConnectionBuilder()
+            .withUrl("/noteHub")
+            .build();
+
+
+        hubConnection.on("Create", function (note) {
+            console.log('in Create')
+            genNote(note)
+
+        });
+
+        hubConnection.on("Delete", async function (note) {
+            console.log('in Delete')
+            let id = note['id'];
+            let noteId = 'note' + id;
+            console.log('in Update')
+            await fetch('/note/' + id, {
+                method: 'DELETE',
+                headers: { 'Accept': 'application/json', 'Content-Type': 'application/json' }
+
+            })
+            $('#' + noteId).remove();
+        });
+
+        hubConnection.on("Update", async function (note) {
+            let id = note['id'];
+            let noteId = 'note' + id;
+
+
+            $('#' + noteId).offset(note['coords']).height(note['height']).width(note['width']);
+            $('#' + noteId).css("background-color", note['color']);
+            $('#' + noteId + ' .noteBody .content textarea').val(note['context']);
+            $('#' + noteId + ' .noteBody .header p textarea').val(note['header']);
+        });
+
+
+
+        async function getAllNotes() {
+            let responce = await fetch('/note', {
+                method: 'GET',
+                headers: { 'Accept': 'application/json', 'Content-Type': 'application/json' }
+            })
+            if (responce.ok) {
+                let notes = await responce.json();
+                console.log(notes);
+                notes.forEach(note =>
+                    genNote(note)
+                );
+            }
+        }
+
+        function genNote(note) {
+            console.log('in Gen')
+            let noteId = note['id'];
+            var id = 'note' + noteId;
+            var img = $(
+
+                '<div class="NOTE" id="' + id + '" style ="position: absolute">' +
+                '<div class="noteHeader">' +
+                '<div class="buttons">' +
+                ' <div id="yellow">' +
+                '    <button onclick="fillYellow(' + noteId + ')" class="button yellow"></button>' +
+                '</div>' +
+                ' <div id="blue">' +
+                '    <button onclick="fillBlue(' + noteId + ')" class="button blue"></button>' +
+                '</div>' +
+                ' <div id="pink">' +
+                '     <button onclick="fillPink(' + noteId + ')" class="button pink"></button>' +
+                ' </div>' +
+                ' </div>' +
+                '<div id="exit">' +
+                '     <button  onclick="deleteNote()" class="btn"><i class="fas fa-skull-crossbones" style="color:red"></i></button>' +
+                ' </div>' +
+                '</div>' +
+                ' <div class="noteBody">' +
+                '  <div class="header">' +
+                '     <p><textarea>' + note['header'] + '</textarea></p>' +
+                ' </div>' +
+                ' <div class="content">' +
+                '     <textarea>' + note['context'] + '</textarea>' +
+                ' </div>' +
+                ' </div>' +
+                ' <div>' +
+                '    <button  onclick="saveNote()" class="btn" ><i class="fas fa-save" style="color:green"></i></button>' +
+                ' </div>' +
+                '</div>'
+            );
+            $("body").append(img.offset(note['coords']).height(note['height']).width(note['width']).draggable().resizable());
+            $('.content textarea').resizable();
+            id = '#note' + noteId
+            $(id).css("background-color", note['color']);
+        }
+
+        async function deleteNote() {
+            let noteId = findNoteIdbyEvent(event)
+            let id = noteId.slice(4);
+
+            let responce = await fetch('/note/' + id, {
+                method: 'POST',
+                headers: { 'Accept': 'application/json', 'Content-Type': 'application/json' }
+
+
+            })
+
+            if (responce.ok) {
+                await fetch('/note', {
+                    method: 'DELETE',
+                    headers: { 'Accept': 'application/json', 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        id: parseInt(id, 10),
+                        connectionId: connectionId
+                    })
+                })
+            }
+            $('#' + noteId).remove();
+
+        }
+
+        async function saveNote() {
+            let noteId = findNoteIdbyEvent(event)
+            let id = noteId.slice(4);
+            let coords = $('#' + noteId).offset();
+            let width = $('#' + noteId).width();
+            let height = $('#' + noteId).height();
+
+            let color = getCollor(noteId);
+            let header = $('#' + noteId +' .noteBody .header p textarea').val();
+            let content = $('#' + noteId +' .noteBody .content textarea').val();
+            console.log(parseInt(id, 10))
+            let note = {
+                id: parseInt(id, 10),
+                header: header.toString(),
+                context: content.toString(),
+                color: color.toString(),
+                height: parseInt(height),
+                width: parseInt(width),
+                coords: {
+                    top: parseInt(coords['top']),
+                    left: parseInt(coords['left'])
+                }
+
+            };
+            let noteRequest = {
+                note: note,
+                connectionId: connectionId
+            }
+            console.log(noteRequest)
+            let responce = await fetch('/note/' + id, {
+                method: 'POST',
+                headers: { 'Accept': 'application/json', 'Content-Type': 'application/json' }
+            })
+            if (!responce.ok) {
+                await fetch("/note", {
+                    method: "POST",
+                    headers: { "Accept": "application/json", "Content-Type": "application/json" },
+                    body: JSON.stringify(noteRequest)
+                });
+            } else {
+                await fetch("/note", {
+                    method: "PUT",
+                    headers: { "Accept": "application/json", "Content-Type": "application/json" },
+                    body: JSON.stringify(noteRequest)
+                });
+            }
+
+        }
+
+        function findNoteIdbyEvent(event) {
+            let target = event.target.parentNode;
+            let className = target.className;
+            while (true) {
+                if (className.includes('NOTE')) {
+                    break;
+                }
+                className = target.parentNode.className;
+                target = target.parentNode;
+            }
+            return target.id
+        }
+
+        function parseColor(color) {
+            var arr = []; color.replace(/[\d+\.]+/g, function (v) { arr.push(parseFloat(v)); });
+            return {
+                hex: "#" + arr.slice(0, 3).map(toHex).join(""),
+                opacity: arr.length == 4 ? arr[3] : 1
+            };
+        }
+
+        function toHex(int) {
+            var hex = int.toString(16);
+            return hex.length == 1 ? "0" + hex : hex;
+        }
+
+        function getCollor(noteId) {
+            let hexColor = parseColor($('#' + noteId).css('background-color'));
+            let color = 'white';
+            if (hexColor['hex'].includes('#ffff00')) {
+                color = 'yellow';
+            }
+            if (hexColor['hex'].includes('#0000ff')) {
+                color = 'blue';
+            }
+            if (hexColor['hex'].includes('#ffc0cb')) {
+                color = 'pink';
+            }
+            return color;
+        }
+
+        window.onload = function () {
+            getAllNotes();
+        }
+
+        hubConnection.start().then(() => {
+            console.log(hubConnection.connectionId);
+            connectionId = hubConnection.connectionId;
+        });
+    </script>
+
+</body>
+</html>
