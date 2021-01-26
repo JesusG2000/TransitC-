@@ -1,0 +1,378 @@
+﻿<!DOCTYPE html>
+<html>
+<head>
+
+    <!--    <script src="//cdn.webix.com/components/edge/tinymce/tinymce.js"></script>
+        <script src="//cdn.webix.com/components/edge/nicedit/nicedit.js"></script>-->
+      
+    @* <link rel="stylesheet" href="http://cdn.webix.com/components/sidebar/sidebar.css" type="text/css" charset="utf-8">*@
+    @* <script src="http://cdn.webix.com/components/sidebar/sidebar.js" type="text/javascript" charset="utf-8"></script>*@
+
+    <meta charset="utf-8" />
+    <title>Users</title>
+
+    <link rel="stylesheet" href=@ViewData["color"] type="text/css">
+ 
+
+    <script src="~/webix.trial.complete/webix/codebase/webix.js" type="text/javascript" charset="utf-8"></script>
+    <script src="~/webix.trial.complete/kanban/codebase/kanban.js" type="text/javascript" charset="utf-8"></script>
+    <script src="//docs.webix.com/samples/63_kanban/common/data.js"></script>
+    <script src="~/webix.trial.complete/kanban/samples/common/data.js"></script>
+    <script src="https://unpkg.com/axios/dist/axios.min.js"></script>
+    <script src="/js/main_toolbar.js"></script>
+    <script src="/js/data.js"></script>
+    <script src="/js/api.js"></script>
+    <script src="/js/home.js"></script>
+    <script src="/js/multiview.js"></script>
+    <script src="/js/main.js"></script>
+
+    @*<script src="~/js/action.js"></script>
+        <script src="~/js/api.js"></script>
+        <script src="~/js/button.js"></script>
+        <script src="~/js/data.js"></script>
+        <script src="~/js/label.js"></script>
+        <script src="~/js/uploader.js"></script>
+        <script src="~/js/list.js"></script>
+        <script src="~/js/form.js"></script>
+        <script src="~/js/multiview.js"></script>
+        <script src="~/js/sidebar.js"></script>
+        <script src="~/js/toolbar.js"></script>
+        <script src="~/js/type.js"></script>*@
+
+
+
+    <link rel="stylesheet" href="~/css/style.css" type="text/css">
+    <link rel="stylesheet" href="//cdn.webix.com/materialdesignicons/5.8.95/css/materialdesignicons.min.css"
+          type="text/css" charset="utf-8">
+    <link rel="stylesheet" type="text/css" href="~/webix.trial.complete/kanban/codebase/kanban.css">
+    @*<link rel="stylesheet" href="~/webix.trial.complete/kanban/codebase/skins/contrast.css" type="text/css">*@
+</head>
+<body>
+
+    <script>
+        var imgPath;
+        webix.ui({
+            view: "popup",
+
+            id: "createCollectionPopup",
+            //
+
+
+            body:
+            {
+                view: "form",
+                id: 'createCollectionForm',
+                scroll: 'y',
+                minHeight: 450,
+                // height: 500,
+                // css:'form',
+
+                elements: [
+                    {
+                        view: "text", id: 'collectionName', label: "Name", name: 'collectionName', labelWidth: 100, required: true
+                    },
+                    {
+                        view: "textarea", id: 'collectionDesc', label: "Description", name: 'collectionDesc', labelWidth: 100, required: true
+                    },
+                    {
+                        view: "select", id:'collectionType', label: "Type", value: 'BOOKS', options: [
+                            { value: "BOOKS" },
+                            { value: "FILMS" },
+                            { value: "MUSIC" },
+                            { value: "GAMES" },
+                            { value: "OTHERS" }
+                        ]
+                    },
+                    { template: "Fields", type: "section" },
+                    {
+                        view: "datatable",
+                        id: 'datatable',
+                        autoheight: true,
+                        scroll: 'x',
+                        select: true,
+                        columns: [
+                            { id: "name", header: "Name", fillspace: 5 },
+                            { id: "type", header: "Type", fillspace: 3 },
+                            { header: [{ text: '' }], template: ' {common.trashIcon}', fillspace: 1 }
+                        ],
+                        type: {
+                            trashIcon: '<span class="mdi mdi-delete"></span>',
+                        },
+                        on: {
+                            onBeforeSelect(selection, preserve) {
+                                if (selection) {
+                                    $$('datatable').remove(selection.row);
+                                    $$('datatable').refresh();
+                                }
+                                else return false;
+                            }
+                        }
+                    },
+                    {
+                        view: 'form',
+                        id: 'fieldForm',
+                        elements: [
+
+                            {
+                                view: "text", id: 'fieldName', label: "Name", name: 'fieldName', required: true,
+                                invalidMessage: "Field incorrect "
+                            },
+                            {
+                                view: "select", id: 'selectedType', label: "Type", minWidth: 70, value: 'INT', options: [
+                                    { value: "INT" },
+                                    { value: "STRING" },
+                                    { value: "TEXT" },
+                                    { value: "DATE" },
+                                    { value: "BOOL" }
+                                ]
+                            },
+                            {
+                                view: 'button',
+                                label: 'Add field',
+                                click: function () {
+                                    $$('fieldError').setValue('');
+                                    if (this.getParentView().validate()) {
+                                        var fieldName = $$("fieldName").getValue();
+                                        var selectedType = $$("selectedType").getValue();
+                                        let data = $$("datatable").serialize();
+                                       
+                                        let add = true;
+                                        for (let i = 0; i < data.length; i++) {
+                                            if (data[i]['name'] === fieldName) {
+                                                add = false;
+                                            }
+                                        }
+                                        if (add) {
+                                            $$("datatable").add({
+                                            name: fieldName,
+                                            type: selectedType
+                                        }, 0);
+                                            $$('datatable').refreshColumns();
+                                        }
+                                        else
+                                        {
+                                            $$('fieldError').setValue('This field already in use');
+                                        }
+                                    }
+                                }
+                            }
+                        ],
+                        rules: {
+                            'fieldName': function (value) {
+                                if (value) {
+                                        return value.match('^([a-zA-Z0-9а-яА-Я]+){2,}$');
+                                }
+                                return false;
+                            }
+                        }
+                    },
+                    {
+                        view: 'label', id: 'fieldError', label: '', align: 'center', css: "login_error_label"
+                    },
+                    {
+                        view: "uploader",
+                        value: "Upload or drop file here",
+                        id: 'collectionLoader',
+                        name: "files",
+                        link: "collectionList",
+                        upload: "/upload",
+                        multiple: false,
+                        accept: "image/png, image/jpg, image/jpeg",
+                        on: {
+                            async onBeforeFileAdd(file) {
+
+                                let cloudnaryUrl = 'https://api.cloudinary.com/v1_1/ivanverigo/upload';
+                                let cloudnaryUploadPreset = 'jxbthhtp';
+                                const selectedFile = file.file;
+
+                                var formData = new FormData();
+                                formData.append('file', selectedFile);
+                                formData.append('upload_preset', cloudnaryUploadPreset);
+
+                                axios({
+                                    url: cloudnaryUrl,
+                                    method: 'POST',
+                                    header: {
+                                        'Content-Type': 'application/x-www-form-urlencoded'
+                                    },
+                                    data: formData
+                                }).then(function (res) {
+                                    let data1 = res.data.secure_url.split('/')[6];
+                                    let data2 = res.data.secure_url.split('/')[7];
+                                    let slash = '/';
+                                    imgPath = data1 + slash + data2;
+                                });
+                            }
+                        }
+                    },
+                    {
+                        view: "list",
+                        id: "collectionList",
+                        type: "uploader",
+                        autoheight: true,
+                        borderless: true
+                    },
+                    {
+                        view: 'button', type: 'button', value: 'Create', css: "webix_primary",
+                        click: async function () {
+                            if (this.getParentView().validate()) {
+                                let collectionName = $$('collectionName').getValue();
+                                let res = await isCollectionExist({name:collectionName});
+                                if (!res.ok) {
+                                    
+                                    let collectionDesc = $$('collectionDesc').getValue();
+                                    let collectionType = $$('collectionType').getValue();
+
+                                    let image = imgPath ? imgPath : 'v1611139359/unknown.jpg';
+
+                                    let user = await isUserLoggedIn();
+                                    let jsonUser = await user.json();
+                                    let userId = jsonUser['id'];
+
+                                    let data = $$("datatable").serialize();
+
+                                    let collection = {
+                                        name: collectionName,
+                                        description: collectionDesc,
+                                        collectionType: collectionType,
+                                        pathToImg: image,
+                                        userId: userId
+                                    }
+                                    console.log(collection);
+                                    let responce = await createCollection(collection);
+                                    let collectionJson = await responce.json();
+
+                                        for (let i = 0; i < data.length; i++) {
+                                            let field = {
+                                                name: data[i].name,
+                                                fieldType: data[i].type,
+                                                collectionId: collectionJson['id']
+                                            }
+                                            console.log(field);
+                                            await createField(field);
+                                    }
+                                    $$('createCollectionPopup').hide();
+                                } else {
+                                    $$('collectionError').setValue('This collection name already in use');
+                                }
+                            }
+                        }
+                    },
+                    {
+                        view: 'label', id: 'collectionError', label: '', align: 'center', css: "login_error_label"
+                    }
+                ],
+                rules: {
+                    'collectionName': function (value) {
+                        if (value) {
+                            return true;
+                        }
+                        return false;
+                    },
+                    'collectionDesc': function (value) {
+
+                        if (value) {
+                            return true;
+                        }
+                        return false;
+                    }
+                }
+            },
+
+            modal: false,
+            resize: true
+        });</script>
+    <script>
+        var imgPath;
+        //webix.ui.fullScreen();
+        webix.type(webix.ui.tree, {
+            baseType: "sideBar",			// inherit everything else from sidebar type
+            name: "customIcons",
+            icon: function (obj, common) {	// custom rendering pattern for icons
+                if (obj.icon) {
+                    //  console.log(obj.icon)
+                    return `<span class='webix_icon webix_sidebar_icon ${obj.icon} '></span>`;
+                }
+                return "";
+            }
+        });
+        webix.type(webix.ui.kanbanlist, {
+            name: "cards",
+            icons: [
+                {
+                    id: "comments", icon: "webix_kanban_icon kbi-comment", show: function (t, e) {
+                        return !!e.config.comments
+                    }, template: function (t) {
+                        return t.comments && t.comments.length || ""
+                    }
+                },
+                /* {
+                      id: "editor", icon: "webix_kanban_icon kbi-pencil", show: function (t, e) {
+                          return e.config.editor && !e.config.cardActions
+                      }
+                  },*/
+                {
+                    id: "menu", icon: "webix_kanban_icon kbi-cogs", show: function (t, e) {
+                        return !!e.config.cardActions
+                    }
+                },
+
+                {icon: "mdi mdi-thumb-up", template: 2}
+            ],
+
+            templateBody: function (obj) {
+                var html = "";
+                //  console.log(obj.image);
+                if (obj.image)
+                    html += "<img class='image' src='https://docs.webix.com/samples/63_kanban/common/imgs/attachments/" + obj.image + "'/>";
+                html += "<div>" + obj.text + "</div>";
+                return html;
+            }
+        });
+
+      
+
+        webix.ready(function () {
+            if (!webix.env.touch && webix.env.scrollSize)
+                webix.CustomScroll.init();
+
+            webix.ui({
+
+                rows:
+                    [
+                        {
+                            view: 'toolbar',
+                            id: 'mainToolbar',
+                            cols: [
+                                menu,
+                                label,
+                                searchBar,
+                                createCollectionButton,
+                                changeThemeButton,
+                                changeLangButton,
+                                signInUpButton
+                            ]
+                        },
+                        {
+                            id: 'cols',
+                            cols: [
+                                left_main_sidebar,
+                                collection_multivew
+                            ]
+                        }
+                    ]
+            });
+        });
+    </script>
+    <script>
+        async function checkUser() {
+            let result = await isUserLoggedIn();
+            if (result.ok) {
+                actionAfterLoginUser();
+            }
+        }
+        init();
+        checkUser();
+    </script>
+</body>
+</html>     

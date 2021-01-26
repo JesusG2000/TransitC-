@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta charset="utf-8" />
+		<title>Gantt: All Features</title>
+		<!-- Webix Library -->
+		<script type="text/javascript" src="../../codebase/webix/webix.js"></script>
+		<link
+			rel="stylesheet"
+			type="text/css"
+			href="../../codebase/webix/webix.css"
+		/>
+
+		<!-- App -->
+		<script type="text/javascript" src="../../codebase/gantt.js"></script>
+		<link rel="stylesheet" type="text/css" href="../../codebase/gantt.css" />
+
+		<!-- locales -->
+		<script type="text/javascript" src="../common/locales/zh.js"></script>
+		<script type="text/javascript" src="../common/locales/ru.js"></script>
+
+		<!-- configs -->
+		<script type="text/javascript" src="../common/data.js"></script>
+	</head>
+	<body>
+		<style>
+			.task_search_mark {
+				background: yellow;
+				color: #313131;
+			}
+		</style>
+		<script>
+			webix.ready(function() {
+				if (webix.env.touch) webix.ui.fullScreen();
+				else if (webix.env.scrollSize) webix.CustomScroll.init();
+
+				function getScales(minScale) {
+					const scales = [];
+					switch (minScale) {
+						case "year":
+							scales.push(yearScale);
+							break;
+						case "quarter":
+							scales.push(yearScale, quarterScale);
+							break;
+						case "month":
+							scales.push(yearScale, quarterScale, monthScale);
+							break;
+						case "week":
+							scales.push(quarterScale, monthScale, weekScale);
+							break;
+						case "day":
+							scales.push(yearScale, monthScale, dayScale);
+							break;
+						case "hour":
+							scales.push(monthScale, dayScale, hourScale);
+							break;
+					}
+					return scales;
+				}
+
+				let originalStartDate = null;
+				let originalEndDate = null;
+				function resetScales(v, o) {
+					const current = gantt1.getService("local").getScales();
+					if (!(originalEndDate || originalStartDate)) {
+						originalStartDate = webix.Date.add(current.start, 1, o, true);
+						originalEndDate = webix.Date.add(current.end, -1, o, true);
+					}
+
+					const cellWidth = cellWidths[v];
+					const scales = getScales(v);
+
+					const start = webix.Date.add(originalStartDate, -1, v, true);
+					const end = webix.Date.add(originalEndDate, 1, v, true);
+
+					gantt1
+						.getService("local")
+						.setScales(
+							start,
+							end,
+							!(v == "day"),
+							cellWidth,
+							current.cellHeight,
+							scales
+						);
+
+					gantt1.$app.refresh();
+					gantt1.getState().$batch({ top: 0, left: 0 });
+				}
+
+				const zoom = {
+					view: "richselect",
+					label: "Zoom:",
+					value: "day",
+					width: 150,
+					labelWidth: 50,
+					options: ["hour", "day", "week", "month", "quarter", "year"],
+					on: {
+						onChange: resetScales,
+					},
+				};
+
+				const locales = {
+					view: "richselect",
+					options: ["en", "ru", "zh"],
+					width: 150,
+					value: "en",
+					label: "Language: ",
+					on: {
+						onChange: function(v) {
+							const locale = gantt1.getService("locale");
+							locale.setLang(v);
+						},
+					},
+				};
+
+				const exportBtn = {
+					view: "button",
+					value: "Export to Excel",
+					autowidth: true,
+					click: () => webix.toExcel(gantt1),
+				};
+
+				let currentSearchString = "";
+				function searchTasks() {
+					const input = (currentSearchString = this.getValue()
+						.trim()
+						.toLowerCase());
+					const tasks = gantt1.getService("local").tasks();
+					const links = gantt1.getService("local").links();
+
+					if (!input) {
+						tasks.filter();
+						links.filter();
+					} else {
+						tasks.filter(obj => {
+							return obj.text.toLowerCase().indexOf(input) !== -1;
+						});
+
+						links.filter(obj => {
+							return (
+								tasks.data.order.indexOf(obj.target) !== -1 &&
+								tasks.data.order.indexOf(obj.source) !== -1
+							);
+						});
+					}
+				}
+				const search = {
+					view: "text",
+					placeholder: "Type to search tasks...",
+					on: {
+						onTimedKeyPress: searchTasks,
+					},
+				};
+
+				const bar = {
+					view: "toolbar",
+					css: "webix_dark",
+					margin: 12,
+					paddingX: 10,
+					elements: [zoom, search, { gravity: 0.5 }, exportBtn, locales],
+				};
+
+				function SearchTemplate(name) {
+					if (currentSearchString) {
+						const rex = new RegExp("(" + currentSearchString + ")", "gi");
+						return name.replace(
+							rex,
+							"<span class='task_search_mark'>$1</span>"
+						);
+					}
+
+					return name;
+				}
+
+				class MyBars extends gantt.views["chart/bars"] {
+					BarsTemplate(obj, _) {
+						const text = SearchTemplate(obj.text) || _("(no title)");
+						return obj.type == "milestone" ? "" : text;
+					}
+				}
+
+				class MyTree extends gantt.views.tree {
+					config() {
+						const ui = super.config();
+						const _ = this.app.getService("locale")._;
+
+						ui.columns[0].template = (obj, common) => {
+							const text = obj.text ? SearchTemplate(obj.text) : "";
+							return common.treetable(obj, common) + (text || _("(no title)"));
+						};
+
+						return ui;
+					}
+				}
+
+				webix.ui({
+					rows: [
+						bar,
+						{
+							view: "gantt",
+							id: "gantt",
+							url: "https://docs.webix.com/gantt-backend/",
+							scales: [yearScale, monthScale, dayScale],
+							locale: {
+								lang: "en",
+								webix: {
+									// switch all webix widgets to the selected locale
+									en: "en-US",
+									zh: "zh-CN",
+									ru: "ru-RU",
+								},
+							},
+							override: new Map([
+								[gantt.views["chart/bars"], MyBars],
+								[gantt.views.tree, MyTree],
+							]),
+						},
+					],
+				});
+
+				const gantt1 = $$("gantt");
+			});
+
+			gantt.locales.ru = ruLocale;
+			gantt.locales.zh = zhLocale;
+		</script>
+	</body>
+</html>

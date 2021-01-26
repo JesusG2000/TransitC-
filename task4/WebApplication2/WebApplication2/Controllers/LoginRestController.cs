@@ -11,6 +11,15 @@ using WebApplication2.Data;
 
 namespace WebApplication2.Controllers
 {
+    public class Responce
+    {
+        public string Status { get; set; }
+
+        public Responce(string status)
+        {
+            Status = status;
+        }
+    }
     [ApiController]
     public class LoginRestController : ControllerBase
     {
@@ -63,6 +72,13 @@ namespace WebApplication2.Controllers
             await Authenticate(isExist.Name); // аутентификация
             HttpContext.Response.Cookies.Append("user", isExist.Name);
             return Ok(isExist);
+        }
+        
+        [Route("login/bot")]
+        [HttpPost]
+        public async Task<ActionResult<User>> bot(string dest)
+        {
+            return Ok(new Responce("server"));
         }
     }
 }

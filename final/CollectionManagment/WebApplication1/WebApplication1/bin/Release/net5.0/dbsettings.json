@@ -1,0 +1,7 @@
+{
+  "ConnectionStrings": {
+    "DefaultConnection": "Data Source=SQL5052.site4now.net;Initial Catalog=DB_A6E05F_verigoivan2000;User Id=DB_A6E05F_verigoivan2000_admin;Password=18051965qQ"
+  }
+}
+//Server=COMPUTER\\MYSERV;Database=CollectionManagment;Trusted_Connection=True;MultipleActiveResultSets=true
+//"Data Source=SQL5052.site4now.net;Initial Catalog=DB_A6E05F_verigoivan2000;User Id=DB_A6E05F_verigoivan2000_admin;Password=18051965qQ

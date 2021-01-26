@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+Этот файл используется процессом публикации или упаковки вашего веб-проекта. Можно настроить поведение этого процесса,
+изменив этот файл MSBuild. Подробности см. на странице https://go.microsoft.com/fwlink/?LinkID=208121. 
+-->
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup>
+    <TimeStampOfAssociatedLegacyPublishXmlFile />
+    <EncryptedPassword>AQAAANCMnd8BFdERjHoAwE/Cl+sBAAAAZyk/pAPNf02xZ0LOQ78nfQAAAAACAAAAAAAQZgAAAAEAACAAAAAC2lpfxwonrnLADR5T4/gradqJUK6/VyDYcCNryXIBzgAAAAAOgAAAAAIAACAAAAAXiSQjQdwGQIFzpy63El/nnEJW3T9WkusnJplS306X6iAAAABlar3VCfRzToSV1n3XgI1LL4IKlhPwGFECeLgiVci0AEAAAAAPyBI79sQDKgqcerNlmYbF0spz74o/OsUGfonnK4p0q8L86qGVTempJYTEtfo5a0Om5x/W32FvA+RrpXrqzbWj</EncryptedPassword>
+  </PropertyGroup>
+  <ItemGroup>
+    <EFMigrations Include="WebApplication1.Models.AppDbContext">
+      <Value>Data Source=SQL5052.site4now.net%3bInitial Catalog=DB_A6E05F_verigoivan2000%3bUser Id=DB_A6E05F_verigoivan2000_admin%3bPassword=18051965qQ</Value>
+    </EFMigrations>
+  </ItemGroup>
+</Project>

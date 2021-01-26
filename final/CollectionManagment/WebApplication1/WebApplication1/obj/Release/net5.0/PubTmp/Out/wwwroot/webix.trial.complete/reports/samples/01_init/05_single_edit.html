@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta charset="utf-8" />
+		<title>Reports: Single edit</title>
+		<!-- Webix Library -->
+		<script type="text/javascript" src="../../codebase/webix/webix.js"></script>
+		<link
+			rel="stylesheet"
+			type="text/css"
+			href="../../codebase/webix/webix.css"
+		/>
+
+		<!-- App -->
+		<script type="text/javascript" src="../../codebase/reports.js"></script>
+		<link rel="stylesheet" type="text/css" href="../../codebase/reports.css" />
+	</head>
+	<body>
+		<script>
+			webix.ready(function() {
+				if (webix.env.touch) webix.ui.fullScreen();
+				else if (webix.env.scrollSize) webix.CustomScroll.init();
+
+				webix.ui({
+					type: "space",
+					rows: [
+						{
+							view: "button",
+							width: 120,
+							value: "Edit",
+							css: "webix_primary",
+							click: function() {
+								var r = $$("r");
+								r.config.mode = r.config.mode == "show" ? "edit" : "show";
+
+								this.config.label = r.config.mode == "show" ? "Edit" : "View";
+								this.refresh();
+							},
+						},
+						{
+							view: "reports",
+							id: "r",
+							moduleId: 33,
+							mode: "show",
+							toolbar: false,
+							url: "https://docs.webix.com/reports-backend/",
+						},
+					],
+				});
+			});
+		</script>
+	</body>
+</html>

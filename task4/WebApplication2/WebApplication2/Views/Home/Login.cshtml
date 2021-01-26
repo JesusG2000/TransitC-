@@ -7,60 +7,260 @@
     <link href="//maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css" rel="stylesheet" id="bootstrap-css">
     <script src="//maxcdn.bootstrapcdn.com/bootstrap/4.0.0/js/bootstrap.min.js"></script>
     <script src="//cdnjs.cloudflare.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
+
+    <script src="~/webix.trial.complete/webix/codebase/webix.js" type="text/javascript" charset="utf-8"></script>
+    <script src="http://cdn.webix.com/components/sidebar/sidebar.js" type="text/javascript" charset="utf-8"></script>
+    <script src="~/webix.trial.complete/kanban/codebase/kanban.js" type="text/javascript" charset="utf-8"></script>
+    <script src="data.js"></script>
+    <script src="home.js"></script>
+    <script src="menu.js"></script>
+    <script src="customer.js"></script>
+    <script src="~/webix.trial.complete/kanban/samples/common/data.js"></script>
+    <script src="//docs.webix.com/samples/63_kanban/common/data.js"></script>
+
+    <link rel="stylesheet" href="http://cdn.webix.com/components/sidebar/sidebar.css" type="text/css" charset="utf-8">
+    <link rel="stylesheet" href="~/webix.trial.complete/webix/codebase/skins/contrast.css" type="text/css">
+    <link rel="stylesheet" href="css/style.css" type="text/css">
+    <link rel="stylesheet" href="//cdn.webix.com/materialdesignicons/5.8.95/css/materialdesignicons.min.css"
+          type="text/css" charset="utf-8">
+    <link rel="stylesheet" type="text/css" href="~/webix.trial.complete/kanban/codebase/kanban.css">
+
 </head>
 <body>
-    <div class="wrapper fadeInDown">
-        <div id="formContent">
-            <input type="text" id="login" class="fadeIn second" name="login" placeholder="login">
-            <input type="text" id="password" class="fadeIn third" name="login" placeholder="password">
-            <p id="errorMsg"></p>
-            <button class="btn btn-primary btn-lg btn-block login-button" onclick="logUser()">Login</button>
-            <div id="formFooter">
-                <a class="underlineHover" href="/home/registration">Registration</a>
-            </div>
-
-        </div>
-    </div>
     <script>
-        async function logUser() {
-            let user =
-            {
-                name: document.getElementById('login').value,
-                password: document.getElementById('password').value,
-            }
-            const response = await isUserExist(user);
-            if (response !== null) {
-                response.lastVisitDate = new Date();
-                await EditUser(response);
-                document.location.href = "/home/welcome";
-            } else {
-                document.getElementById('errorMsg').innerHTML = 'No such user';
-            }
-        }
+      if (1) {
+        webix.type(webix.ui.kanbanlist, {
+            name: "cards",
+            icons: [
+                {
+                    id: "comments", icon: "webix_kanban_icon kbi-comment", show: function (t, e) {
+                        return !!e.config.comments
+                    }, template: function (t) {
+                        return t.comments && t.comments.length || ""
+                    }
+                },
+                {
+                    id: "editor", icon: "webix_kanban_icon kbi-pencil", show: function (t, e) {
+                        return e.config.editor && !e.config.cardActions
+                    }
+                },
+                {
+                    id: "menu", icon: "webix_kanban_icon kbi-cogs", show: function (t, e) {
+                        return !!e.config.cardActions
+                    }
+                },
 
-        async function isUserExist(user) {
-            const response = await fetch("/login/isUserExist", {
-                method: "POST",
-                headers: { "Accept": "application/json", "Content-Type": "application/json" },
-                body: JSON.stringify(user)
-            });
-            if (response.ok === true) {
-                console.log(response)
-                let data = await response.json();
-                return data;
+                {icon: "mdi mdi-thumb-up" , template:2}
+            ],
+
+            templateBody: function (obj) {
+                var html = "";
+                if (obj.image)
+                    html += "<img class='image' src='https://docs.webix.com/samples/63_kanban/common/imgs/attachments/" + obj.image + "'/>";
+                html += "<div>" + obj.text + "</div>";
+                return html;
             }
-            return null
-        }
-        async function EditUser(user) {
-            console.log("in edit user login")
-            const response = await fetch("/login/user", {
-                method: "PUT",
-                headers: { "Accept": "application/json", "Content-Type": "application/json" },
-                body: JSON.stringify(
-                    user
-                )
+        });
+    
+        webix.ready(function () {
+            if (!webix.env.touch && webix.env.scrollSize)
+                webix.CustomScroll.init();
+
+            webix.ui({
+                id: 'main',
+                rows: [
+                    {
+                        view: "button", css: "webix_primary",
+                        label: "Add new card", width: 150,
+                        click: () => {
+                            $$("myBoard").showEditor();
+                        }
+                    },
+                    {
+                        view: "scrollview", scroll: "x",
+                        id:'scrollview',
+                        body: {
+                            view: "kanban",
+                            id: 'myBoard',
+                            cols: [
+                                {
+                                    header: "Backlog",
+                                    body: {view: "kanbanlist", status: "new", type: "cards"}
+                                },
+                                {
+                                    header: "In Progress",
+                                    body: {view: "kanbanlist", status: "work", type: "cards"}
+                                },
+                                {
+                                    header: "Testing",
+                                    body: {view: "kanbanlist", status: "test", type: "cards"}
+                                },
+                                {
+                                    header: "Done",
+                                    body: {view: "kanbanlist", status: "done", type: "cards"}
+                                }
+                            ],
+                            editor: [
+                                {view: "textarea", name: "text", height: 90, label: "Task"},
+                                {
+                                    view: 'checkbox', label: 'Switch to custom tags', on: {
+                                        onChange(firstValue, secondValue) {
+
+                                            if (firstValue) {
+                                                this.getParentView().addView({
+                                                    view: "text",
+                                                    id: 'custom_tag',
+                                                    name: 'tags',
+                                                    label: "Custom tags",
+                                                    on: {
+                                                        onBlur() {
+                                                            tags_set[tags_set.length] = {id: 'some', value: 'some'};
+                                                            //localStorage.setItem('l','some');
+                                                           // $$('scrollview').refresh();
+                                                        }
+                                                    }
+                                                }, 3);
+                                                this.getParentView().removeView('tag_list');
+
+                                            } else {
+                                                this.getParentView().addView({
+                                                    view: "multicombo",
+                                                    id: 'tag_list',
+                                                    name: "tags",
+                                                    label: "Tags",
+                                                    options:  tags_set,
+
+                                                }, 3);
+                                                this.getParentView().removeView('custom_tag');
+                                            }
+                                        }
+                                    }
+                                },
+
+                                {
+                                    view: "multicombo",
+                                    id: 'tag_list',
+                                    name: "tags",
+                                    label: "Tags",
+                                    options: tags_set,
+
+
+                                },
+
+
+                                {
+                                    cols: [
+                                        {
+                                            name: "user_id", view: "combo", options: users_set, label: "Assign to"
+                                        },
+                                        {
+                                            view: "richselect", name: "color", label: "Priority",
+                                            options: {
+                                                body: {
+                                                    data: colors_set,
+                                                    css: "webix_kanban_colorpicker",
+                                                    template: "<span class='webix_kanban_color_item' style='background-color: #color#'></span>#value#"
+                                                }
+                                            }
+                                        },
+                                        {
+                                            view: "richselect", name: "$list", label: "Status",
+                                            options: [
+                                                {id: "0", value: "new"},
+                                                {id: "1", value: "work"},
+                                                {id: "2", value: "test"},
+                                                {id: "3", value: "done"}
+                                            ]
+                                        }
+                                    ]
+                                },
+                                {
+                                    view: "uploader", value: "Upload file",
+                                    id:'loader',
+                                    name: "files",
+                                    link: "mylist", upload: "/login/bot",
+                                    multiple :false
+                                },
+                                {
+                                    view: "list", id: "mylist", type: "uploader",
+                                    autoheight: true, borderless: true
+                                }
+                            ],
+                            data: base_task_set,
+                            tags:  tags_set,
+                            users: users_set,
+                            colors: colors_set,
+                            comments: true,
+                            userList: true,
+                            on:{
+                                onDataUpdate(){
+                                    console.log(tags_set);
+                                    $$('myBoard').refresh();
+                                }
+                            }
+
+                        }
+                    }]
             });
+
+        });
+          $$("mylist").addDropZone($$("mylist").$view, "Drop files here");
         }
+       
     </script>
+    @*<div class="wrapper fadeInDown">
+            <div id="formContent">
+                <input type="text" id="login" class="fadeIn second" name="login" placeholder="login">
+                <input type="text" id="password" class="fadeIn third" name="login" placeholder="password">
+                <p id="errorMsg"></p>
+                <button class="btn btn-primary btn-lg btn-block login-button" onclick="logUser()">Login</button>
+                <div id="formFooter">
+                    <a class="underlineHover" href="/home/registration">Registration</a>
+                </div>
+
+            </div>
+        </div>
+        <script>
+            async function logUser() {
+                let user =
+                {
+                    name: document.getElementById('login').value,
+                    password: document.getElementById('password').value,
+                }
+                const response = await isUserExist(user);
+                if (response !== null) {
+                    response.lastVisitDate = new Date();
+                    await EditUser(response);
+                    document.location.href = "/home/welcome";
+                } else {
+                    document.getElementById('errorMsg').innerHTML = 'No such user';
+                }
+            }
+
+            async function isUserExist(user) {
+                const response = await fetch("/login/isUserExist", {
+                    method: "POST",
+                    headers: { "Accept": "application/json", "Content-Type": "application/json" },
+                    body: JSON.stringify(user)
+                });
+                if (response.ok === true) {
+                    console.log(response)
+                    let data = await response.json();
+                    return data;
+                }
+                return null
+            }
+            async function EditUser(user) {
+                console.log("in edit user login")
+                const response = await fetch("/login/user", {
+                    method: "PUT",
+                    headers: { "Accept": "application/json", "Content-Type": "application/json" },
+                    body: JSON.stringify(
+                        user
+                    )
+                });
+            }
+        </script>*@
+
 </body>
 </html>     
